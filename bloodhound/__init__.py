@@ -65,7 +65,7 @@ class BloodHound(object):
 #        self.pdc.ldap_connect(self.ad.auth.username, self.ad.auth.password, kdc)
 
 
-    def run(self, collect, num_workers=10, disable_pooling=False):
+    def run(self, collect, num_workers=10, computer_whitelist=None, computer_blacklist=None, disable_pooling=False):
         start_time = time.time()
         if 'group' in collect or 'objectprops' in collect or 'acl' in collect:
             # Fetch domains/computers for later
@@ -86,7 +86,7 @@ class BloodHound(object):
         if 'localadmin' in collect or 'session' in collect or 'loggedon' in collect or 'experimental' in collect:
             # If we don't have a GC server, don't use it for deconflictation
             have_gc = len(self.ad.gcs()) > 0
-            computer_enum = ComputerEnumerator(self.ad, self.pdc, collect, do_gc_lookup=have_gc)
+            computer_enum = ComputerEnumerator(self.ad, self.pdc, collect, do_gc_lookup=have_gc, computer_whitelist=computer_whitelist, computer_blacklist=computer_blacklist)
             computer_enum.enumerate_computers(self.ad.computers, num_workers=num_workers)
         end_time = time.time()
         minutes, seconds = divmod(int(end_time-start_time),60)
@@ -219,6 +219,12 @@ def main():
                         type=int,
                         default=10,
                         help='Number of workers for computer enumeration (default: 10)')
+    parser.add_argument('--computerwhitelist',
+                        action='store',
+                        help='Load a line-separated list of computer fully qualified domain names to collect information from (all others will be excluded)')
+    parser.add_argument('--computerblacklist',
+                        action='store',
+                        help='Load a line-separated list of computer fully qualified domain names to exclude from collection activities (all others will be included)')
     parser.add_argument('-v',
                         action='store_true',
                         help='Enable verbose output')
@@ -283,6 +289,8 @@ def main():
     bloodhound.connect()
     bloodhound.run(collect=collect,
                    num_workers=args.workers,
+                   computer_whitelist=args.computerwhitelist,
+                   computer_blacklist=args.computerblacklist,
                    disable_pooling=args.disable_pooling)
 
 

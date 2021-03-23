@@ -42,7 +42,7 @@ class ComputerEnumerator(MembershipEnumerator):
     This class extends the MembershipEnumerator class just to inherit the
     membership lookup functions which are also needed for computers.
     """
-    def __init__(self, addomain, addc, collect, do_gc_lookup=True):
+    def __init__(self, addomain, addc, collect, do_gc_lookup=True, computer_whitelist=None, computer_blacklist=None):
         """
         Computer enumeration. Enumerates all computers in the given domain.
         Every domain enumerated will get its own instance of this class.
@@ -50,8 +50,20 @@ class ComputerEnumerator(MembershipEnumerator):
         self.addomain = addomain
         self.addc = addc
         # Blacklist and whitelist are only used for debugging purposes
-        self.blacklist = []
-        self.whitelist = []
+        if computer_whitelist:
+            logging.info('Parsing whitelisted computers')
+            with open(computer_whitelist) as f:
+                f_lines = f.readlines()
+                self.whitelist = [line.strip() for line in f_lines]
+        else:
+            self.whitelist = []
+        if computer_blacklist:
+            logging.info('Parsing blacklisted computers')
+            with open(computer_blacklist) as f:
+                f_lines = f.readlines()
+                self.blacklist = [line.strip() for line in f_lines]
+        else:
+            self.blacklist = []
         self.do_gc_lookup = do_gc_lookup
         # Store collection methods specified
         self.collect = collect
